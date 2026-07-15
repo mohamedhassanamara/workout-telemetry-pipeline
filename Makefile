@@ -1,12 +1,23 @@
-PYTHON ?= python3
+.PHONY: up down reset ps health logs
 
-.PHONY: install check test
+up:
+	docker compose up -d --wait
+	$(MAKE) topics
 
-install:
-	$(PYTHON) -m pip install -e .
+down:
+	docker compose down
 
-check:
-	$(PYTHON) -m compileall -q src tests
+reset:
+	docker compose down -v
 
-test:
-	PYTHONPATH=src $(PYTHON) -m unittest discover -s tests/unit -v
+ps:
+	docker compose ps
+
+health:
+	docker compose exec redpanda rpk cluster health
+	docker compose exec localstack awslocal s3 ls
+
+logs:
+	docker compose logs -f
+topics:
+	docker compose exec -T redpanda bash -s < infra/redpanda/create-topics.sh

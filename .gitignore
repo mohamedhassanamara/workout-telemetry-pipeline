@@ -1,13 +1,8 @@
 .env
-.env.*
-!.env.example
 .venv/
 __pycache__/
-*.py[cod]
-*.egg-info/
-build/
-dist/
+*.pyc
 .pytest_cache/
-.coverage
-htmlcov/
+.ruff_cache/
 .DS_Store
+.idea/
