@@ -1,0 +1,1 @@
+"""Producer entrypoint (implementation pending)."""

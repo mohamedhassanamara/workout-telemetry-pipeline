@@ -1,0 +1,2 @@
+# Scaffold: define Redpanda, LocalStack, ClickHouse, and application services here.
+services: {}
