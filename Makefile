@@ -21,3 +21,12 @@ logs:
 	docker compose logs -f
 topics:
 	docker compose exec -T redpanda bash -s < infra/redpanda/create-topics.sh
+
+install:
+	python3.12 -m venv .venv && .venv/bin/pip install -e ".[dev]"
+
+check:
+	python -m telemetry.tools.check
+
+lint:
+	ruff check src tests && ruff format --check src tests
