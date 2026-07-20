@@ -30,3 +30,6 @@ check:
 
 lint:
 	ruff check src tests && ruff format --check src tests
+
+schemas:
+	python -m telemetry.schemas.registry

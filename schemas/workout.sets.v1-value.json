@@ -1,0 +1,103 @@
+{
+  "$defs": {
+    "Exercise": {
+      "enum": [
+        "back_squat",
+        "bench_press",
+        "deadlift",
+        "overhead_press",
+        "barbell_row",
+        "pull_up"
+      ],
+      "title": "Exercise",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "athlete_id": {
+      "pattern": "^ath_[0-9]{3}$",
+      "title": "Athlete Id",
+      "type": "string"
+    },
+    "event_id": {
+      "format": "uuid",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "event_time": {
+      "format": "date-time",
+      "title": "Event Time",
+      "type": "string"
+    },
+    "event_type": {
+      "const": "workout.set_logged",
+      "default": "workout.set_logged",
+      "title": "Event Type",
+      "type": "string"
+    },
+    "exercise": {
+      "$ref": "#/$defs/Exercise"
+    },
+    "produced_at": {
+      "format": "date-time",
+      "title": "Produced At",
+      "type": "string"
+    },
+    "reps": {
+      "maximum": 50,
+      "minimum": 0,
+      "title": "Reps",
+      "type": "integer"
+    },
+    "rest_seconds": {
+      "maximum": 1800,
+      "minimum": 0,
+      "title": "Rest Seconds",
+      "type": "integer"
+    },
+    "rpe": {
+      "maximum": 10,
+      "minimum": 1,
+      "multipleOf": 0.5,
+      "title": "Rpe",
+      "type": "number"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "session_id": {
+      "format": "uuid",
+      "title": "Session Id",
+      "type": "string"
+    },
+    "set_number": {
+      "maximum": 20,
+      "minimum": 1,
+      "title": "Set Number",
+      "type": "integer"
+    },
+    "weight_kg": {
+      "maximum": 500,
+      "minimum": 0,
+      "title": "Weight Kg",
+      "type": "number"
+    }
+  },
+  "required": [
+    "athlete_id",
+    "event_time",
+    "session_id",
+    "exercise",
+    "set_number",
+    "reps",
+    "weight_kg",
+    "rpe",
+    "rest_seconds"
+  ],
+  "title": "WorkoutSetLogged",
+  "type": "object"
+}

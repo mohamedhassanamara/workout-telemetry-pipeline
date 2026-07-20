@@ -1,0 +1,84 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "athlete_id": {
+      "pattern": "^ath_[0-9]{3}$",
+      "title": "Athlete Id",
+      "type": "string"
+    },
+    "event_id": {
+      "format": "uuid",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "event_time": {
+      "format": "date-time",
+      "title": "Event Time",
+      "type": "string"
+    },
+    "event_type": {
+      "const": "recovery.daily_logged",
+      "default": "recovery.daily_logged",
+      "title": "Event Type",
+      "type": "string"
+    },
+    "hrv_ms": {
+      "anyOf": [
+        {
+          "maximum": 250,
+          "minimum": 5,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Hrv Ms"
+    },
+    "produced_at": {
+      "format": "date-time",
+      "title": "Produced At",
+      "type": "string"
+    },
+    "recovery_date": {
+      "format": "date",
+      "title": "Recovery Date",
+      "type": "string"
+    },
+    "resting_hr_bpm": {
+      "maximum": 120,
+      "minimum": 30,
+      "title": "Resting Hr Bpm",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "sleep_hours": {
+      "maximum": 16,
+      "minimum": 0,
+      "title": "Sleep Hours",
+      "type": "number"
+    },
+    "sleep_quality": {
+      "maximum": 5,
+      "minimum": 1,
+      "title": "Sleep Quality",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "athlete_id",
+    "event_time",
+    "recovery_date",
+    "sleep_hours",
+    "sleep_quality",
+    "resting_hr_bpm"
+  ],
+  "title": "DailyRecoveryLogged",
+  "type": "object"
+}
