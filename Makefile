@@ -33,3 +33,11 @@ lint:
 
 schemas:
 	python -m telemetry.schemas.registry
+
+produce-backfill:
+	python -m telemetry.producer.main backfill --athletes 20 --days 42 \
+		--malformed-rate 0.02 --duplicate-rate 0.01 --late-rate 0.01
+
+produce-live:
+	python -m telemetry.producer.main live --athletes 5 --speed 60 \
+		--malformed-rate 0.02 --duplicate-rate 0.01 --late-rate 0.02
