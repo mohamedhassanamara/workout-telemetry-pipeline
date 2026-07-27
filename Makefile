@@ -41,3 +41,10 @@ produce-backfill:
 produce-live:
 	python -m telemetry.producer.main live --athletes 5 --speed 60 \
 		--malformed-rate 0.02 --duplicate-rate 0.01 --late-rate 0.02
+
+bronze:
+	python -m telemetry.consumers.bronze_sink.main
+
+bronze-reset:   # stop the sink first
+	docker compose exec localstack awslocal s3 rm s3://telemetry-bronze/ --recursive
+	docker compose exec redpanda rpk group seek bronze-sink --to start
