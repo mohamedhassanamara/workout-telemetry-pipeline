@@ -57,6 +57,19 @@ class BronzeSink:
         self.crash_after_writes = args.crash_after_writes
         self.objects_written = 0
 
+    def _on_assign(self, consumer, partitions) -> None:
+        log.info("assigned %s", fmt_partitions(partitions))
+
+    def _on_revoke(self, consumer, partitions) -> None:
+        # about to lose these partitions: persist and commit what we hold for them
+        log.info("revoked %s", fmt_partitions(partitions))
+        self.flush(only={(p.topic, p.partition) for p in partitions})
+
+    def _on_lost(self, consumer, partitions) -> None:
+        # ownership already gone: committing would be unsafe, the new owner re-reads
+        log.warning("LOST %s, discarding their buffered records", fmt_partitions(partitions))
+        self.batcher.discard({(p.topic, p.partition) for p in partitions})
+
     def flush(self, only: set[TP] | None = None) -> None:
         drained = self.batcher.drain(only)
         if not drained:
@@ -77,7 +90,9 @@ class BronzeSink:
 
     def run(self) -> None:
         topics = [self.settings.topic_sets, self.settings.topic_recovery, self.settings.topic_dlq]
-        self.consumer.subscribe(topics)
+        self.consumer.subscribe(
+            topics, on_assign=self._on_assign, on_revoke=self._on_revoke, on_lost=self._on_lost
+        )
         shutdown = GracefulShutdown()
         try:
             while not shutdown.requested:
@@ -88,6 +103,8 @@ class BronzeSink:
             self.flush()  # drain what is left on a clean shutdown
         finally:
             self.consumer.close()
+
+
 
 
 def parse_args() -> argparse.Namespace:

@@ -48,3 +48,5 @@ bronze:
 bronze-reset:   # stop the sink first
 	docker compose exec localstack awslocal s3 rm s3://telemetry-bronze/ --recursive
 	docker compose exec redpanda rpk group seek bronze-sink --to start
+audit:
+	python -m telemetry.tools.bronze_audit
