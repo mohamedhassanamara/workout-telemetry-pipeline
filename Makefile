@@ -3,6 +3,7 @@
 up:
 	docker compose up -d --wait
 	$(MAKE) topics
+	$(MAKE) migrate
 
 down:
 	docker compose down
@@ -50,3 +51,12 @@ bronze-reset:   # stop the sink first
 	docker compose exec redpanda rpk group seek bronze-sink --to start
 audit:
 	python -m telemetry.tools.bronze_audit
+
+migrate:
+	for f in infra/clickhouse/init/*.sql; do \
+		echo "applying $$f"; \
+		docker compose exec -T clickhouse clickhouse-client --user telemetry --password telemetry --multiquery < $$f || exit 1; \
+	done
+
+sql:   # usage: make sql Q="SELECT 1"
+	docker compose exec -T clickhouse clickhouse-client --user telemetry --password telemetry -d telemetry --format PrettyCompactMonoBlock -q "$(Q)"
