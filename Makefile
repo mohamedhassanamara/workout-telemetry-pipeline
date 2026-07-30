@@ -60,3 +60,6 @@ migrate:
 
 sql:   # usage: make sql Q="SELECT 1"
 	docker compose exec -T clickhouse clickhouse-client --user telemetry --password telemetry -d telemetry --format PrettyCompactMonoBlock -q "$(Q)"
+
+silver:
+	python -m telemetry.consumers.silver_loader.main
