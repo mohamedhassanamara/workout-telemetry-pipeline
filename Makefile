@@ -63,3 +63,5 @@ sql:   # usage: make sql Q="SELECT 1"
 
 silver:
 	python -m telemetry.consumers.silver_loader.main
+fatigue:
+	python -m telemetry.processing.fatigue_windows.main
