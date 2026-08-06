@@ -65,3 +65,5 @@ silver:
 	python -m telemetry.consumers.silver_loader.main
 fatigue:
 	python -m telemetry.processing.fatigue_windows.main
+dlq-peek:
+	docker compose exec redpanda rpk topic consume workout.dlq.v1 -n 3 -f '%h\n%v\n\n'

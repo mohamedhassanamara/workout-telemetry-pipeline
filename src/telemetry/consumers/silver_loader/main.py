@@ -22,6 +22,7 @@ from telemetry.consumers.silver_loader.rows import (
     recovery_row,
     set_row,
 )
+from telemetry.dlq.publisher import DeadLetterPublisher, describe_validation_error
 from telemetry.log import setup_logging
 from telemetry.schemas.events import WorkoutSetLogged, parse_event
 
@@ -41,6 +42,7 @@ class SilverLoader:
         self.pending = 0  # messages consumed since the last commit
         self.batch_started: float | None = None
         self.stats: Counter[str] = Counter()
+        self.dlq = DeadLetterPublisher(settings, GROUP_ID)
 
     def handle(self, msg: Message) -> None:
         if self.batch_started is None:
@@ -58,9 +60,7 @@ class SilverLoader:
 
     def on_invalid(self, msg: Message, exc: ValidationError) -> None:
         self.stats["invalid"] += 1
-        log.warning(
-            "invalid %s[%d]@%d: %s", msg.topic(), msg.partition(), msg.offset(), exc.errors()[0]["msg"]
-        )
+        self.dlq.publish(msg, reason="validation_error", error=describe_validation_error(exc))
 
     def should_flush(self) -> bool:
         if self.batch_started is None:
@@ -74,6 +74,7 @@ class SilverLoader:
             self.ch.insert("silver_workout_sets", self.set_rows, column_names=SET_COLUMNS)
         if self.recovery_rows:
             self.ch.insert("silver_daily_recovery", self.recovery_rows, column_names=RECOVERY_COLUMNS)
+        self.dlq.flush()
         self.consumer.commit(asynchronous=False)  # only after the insert succeeded
         self.stats["sets"] += len(self.set_rows)
         self.stats["recovery"] += len(self.recovery_rows)
