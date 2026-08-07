@@ -1,10 +1,12 @@
-"""Silver loader: validate events, batch-insert into ClickHouse, then commit."""
+"""Silver loader: validate, batch-insert into ClickHouse, DLQ bad data, then commit."""
 from __future__ import annotations
 
 import logging
 import time
+import traceback
 from collections import Counter
 
+from clickhouse_connect.driver.exceptions import OperationalError
 from confluent_kafka import Message
 from pydantic import ValidationError
 
@@ -24,12 +26,14 @@ from telemetry.consumers.silver_loader.rows import (
 )
 from telemetry.dlq.publisher import DeadLetterPublisher, describe_validation_error
 from telemetry.log import setup_logging
+from telemetry.retry import retry
 from telemetry.schemas.events import WorkoutSetLogged, parse_event
 
 log = logging.getLogger("silver_loader")
 GROUP_ID = "silver-loader"
 MAX_MESSAGES = 2000
 MAX_AGE_S = 5.0
+TRANSIENT = (OperationalError, ConnectionError, TimeoutError)
 
 
 class SilverLoader:
@@ -37,12 +41,12 @@ class SilverLoader:
         self.settings = settings
         self.consumer = build_consumer(settings, GROUP_ID)
         self.ch = make_clickhouse_client(settings)
+        self.dlq = DeadLetterPublisher(settings, GROUP_ID)
         self.set_rows: list[list] = []
         self.recovery_rows: list[list] = []
-        self.pending = 0  # messages consumed since the last commit
+        self.pending = 0
         self.batch_started: float | None = None
         self.stats: Counter[str] = Counter()
-        self.dlq = DeadLetterPublisher(settings, GROUP_ID)
 
     def handle(self, msg: Message) -> None:
         if self.batch_started is None:
@@ -51,31 +55,40 @@ class SilverLoader:
         try:
             event = parse_event(msg.value() or b"")
         except ValidationError as exc:
-            self.on_invalid(msg, exc)
+            self.stats["invalid"] += 1
+            self.dlq.publish(msg, "validation_error", describe_validation_error(exc))
             return
-        if isinstance(event, WorkoutSetLogged):
-            self.set_rows.append(set_row(event, msg.partition(), msg.offset()))
-        else:
-            self.recovery_rows.append(recovery_row(event, msg.partition(), msg.offset()))
-
-    def on_invalid(self, msg: Message, exc: ValidationError) -> None:
-        self.stats["invalid"] += 1
-        self.dlq.publish(msg, reason="validation_error", error=describe_validation_error(exc))
+        try:
+            if isinstance(event, WorkoutSetLogged):
+                self.set_rows.append(set_row(event, msg.partition(), msg.offset()))
+            else:
+                self.recovery_rows.append(recovery_row(event, msg.partition(), msg.offset()))
+        except Exception:  # no I/O here: any failure is deterministic -> poison message
+            self.stats["processing_error"] += 1
+            log.exception("processing error at %s[%d]@%d", msg.topic(), msg.partition(), msg.offset())
+            self.dlq.publish(msg, "processing_error", traceback.format_exc(limit=3))
 
     def should_flush(self) -> bool:
         if self.batch_started is None:
             return False
         return self.pending >= MAX_MESSAGES or time.monotonic() - self.batch_started >= MAX_AGE_S
 
+    def _insert(self, table: str, rows: list[list], columns: list[str]) -> None:
+        retry(
+            lambda: self.ch.insert(table, rows, column_names=columns),
+            retry_on=TRANSIENT,
+            what=f"insert into {table}",
+        )
+
     def flush(self) -> None:
         if self.pending == 0:
             return
         if self.set_rows:
-            self.ch.insert("silver_workout_sets", self.set_rows, column_names=SET_COLUMNS)
+            self._insert("silver_workout_sets", self.set_rows, SET_COLUMNS)
         if self.recovery_rows:
-            self.ch.insert("silver_daily_recovery", self.recovery_rows, column_names=RECOVERY_COLUMNS)
-        self.dlq.flush()
-        self.consumer.commit(asynchronous=False)  # only after the insert succeeded
+            self._insert("silver_daily_recovery", self.recovery_rows, RECOVERY_COLUMNS)
+        self.dlq.flush()  # bad messages durable in the DLQ before we move on
+        self.consumer.commit(asynchronous=False)  # only after both outputs are durable
         self.stats["sets"] += len(self.set_rows)
         self.stats["recovery"] += len(self.recovery_rows)
         log.info("flushed %d messages, totals %s", self.pending, dict(self.stats))
