@@ -12,6 +12,7 @@ from pydantic import ValidationError
 
 from telemetry.clients import make_clickhouse_client
 from telemetry.config import Settings, get_settings
+from telemetry.dlq.publisher import DeadLetterPublisher
 from telemetry.consumers.common import (
     GracefulShutdown,
     build_consumer,
@@ -48,6 +49,7 @@ class FatigueProcessor:
         self.results: list[list] = []
         self.stats: Counter[str] = Counter()
         self.last_flush = time.monotonic()
+        self.dlq = DeadLetterPublisher(settings, GROUP_ID)
 
     def handle(self, msg: Message) -> None:
         p = msg.partition()
@@ -64,16 +66,18 @@ class FatigueProcessor:
         if self.windower.add(state, event, msg.offset()):
             self.stats["accepted"] += 1
         else:
-            self.on_late(msg, event)
+            self.on_late(msg, event, state)
         for window in self.windower.close_ready(state):
             self.results.append(summarize(window, "watermark"))
 
-    def on_late(self, msg: Message, event: WorkoutSetLogged) -> None:
+    def on_late(self, msg: Message, event: WorkoutSetLogged, state: PartitionState) -> None:
         self.stats["late"] += 1
-        log.warning(
-            "late %s athlete=%s event_time=%s partition=%d",
-            event.event_id, event.athlete_id, event.event_time.isoformat(), msg.partition(),
+        wm = self.windower.watermark(state)
+        error = (
+            f"event_time {event.event_time.isoformat()} is older than watermark "
+            f"{wm.isoformat()} minus allowed lateness {self.windower.allowed_lateness}"
         )
+        self.dlq.publish(msg, reason="late_event", error=error)
 
     def close_idle(self) -> None:
         now = time.monotonic()
@@ -93,6 +97,7 @@ class FatigueProcessor:
             for p, nxt in self.next_offsets.items()
         ]
         if offsets:
+            self.dlq.flush()
             self.consumer.commit(offsets=offsets, asynchronous=False)
         self.last_flush = time.monotonic()
 
