@@ -1,4 +1,5 @@
 """Thin, reliable wrapper around confluent_kafka.Producer."""
+
 from __future__ import annotations
 
 import logging

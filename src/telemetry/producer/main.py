@@ -1,4 +1,5 @@
 """Simulator CLI: backfill history or stream live sessions into Redpanda, with optional chaos."""
+
 from __future__ import annotations
 
 import argparse
@@ -6,7 +7,7 @@ import logging
 import random
 import time
 from collections import Counter
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 from telemetry.config import Settings, get_settings
 from telemetry.log import setup_logging
@@ -44,7 +45,9 @@ def parse_args() -> argparse.Namespace:
 class Emitter:
     """Sends events, applying malformed/duplicate chaos and counting what it did."""
 
-    def __init__(self, producer: TelemetryProducer, settings: Settings, cfg: ChaosConfig, seed: int):
+    def __init__(
+        self, producer: TelemetryProducer, settings: Settings, cfg: ChaosConfig, seed: int
+    ):
         self.producer, self.settings, self.cfg = producer, settings, cfg
         self.rng = random.Random(seed + 1)  # separate stream: chaos never changes the data
         self.stats: Counter[str] = Counter()
@@ -81,7 +84,7 @@ def build_live_timeline(args: argparse.Namespace) -> list:
     rng = random.Random(args.seed)
     athletes = make_athletes(args.athletes, rng)
     today = date.today()
-    base = datetime.now(timezone.utc)
+    base = datetime.now(UTC)
     timeline = []
     for athlete in athletes:
         recovery, readiness = generate_recovery(athlete, today, rng)
@@ -102,9 +105,11 @@ def run_live(args: argparse.Namespace, emitter: Emitter) -> None:
     for event in timeline:
         due = (event.event_time - t0).total_seconds() / args.speed
         emitter.producer.wait(due - (time.monotonic() - wall0))
-        stamped = event.model_copy(update={"event_time": datetime.now(timezone.utc)})
+        stamped = event.model_copy(update={"event_time": datetime.now(UTC)})
         is_late = isinstance(event, WorkoutSetLogged) and emitter.rng.random() < args.late_rate
-        emitter.emit(backdate(stamped, emitter.cfg, emitter.rng) if is_late else stamped, late=is_late)
+        emitter.emit(
+            backdate(stamped, emitter.cfg, emitter.rng) if is_late else stamped, late=is_late
+        )
 
 
 def main() -> None:
@@ -125,7 +130,12 @@ def main() -> None:
     finally:
         undelivered = producer.flush()
         log.info("chaos summary: %s", dict(sorted(emitter.stats.items())))
-        log.info("delivered=%d failed=%d undelivered=%d", producer.delivered, producer.failed, undelivered)
+        log.info(
+            "delivered=%d failed=%d undelivered=%d",
+            producer.delivered,
+            producer.failed,
+            undelivered,
+        )
 
 
 if __name__ == "__main__":

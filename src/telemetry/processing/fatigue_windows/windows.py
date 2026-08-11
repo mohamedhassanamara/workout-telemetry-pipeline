@@ -1,4 +1,5 @@
 """Event-time session windows with per-partition watermarks. Pure: no Kafka, no I/O."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -9,9 +10,18 @@ from uuid import UUID
 from telemetry.schemas.events import WorkoutSetLogged
 
 FATIGUE_COLUMNS = [
-    "athlete_id", "window_start", "window_end", "device_session_ids", "set_count",
-    "total_reps", "volume_load_kg", "avg_rpe", "rpe_drift", "rep_drop_pct",
-    "fatigue_index", "closed_by",
+    "athlete_id",
+    "window_start",
+    "window_end",
+    "device_session_ids",
+    "set_count",
+    "total_reps",
+    "volume_load_kg",
+    "avg_rpe",
+    "rpe_drift",
+    "rep_drop_pct",
+    "fatigue_index",
+    "closed_by",
 ]
 
 
@@ -68,7 +78,9 @@ class SessionWindower:
         if wm is not None and event.event_time < wm - self.allowed_lateness:
             return False
         windows = state.windows.setdefault(event.athlete_id, [])
-        touching = [w for w in windows if w.start - self.gap <= event.event_time <= w.end + self.gap]
+        touching = [
+            w for w in windows if w.start - self.gap <= event.event_time <= w.end + self.gap
+        ]
         if touching:
             target = touching[0]
             for other in touching[1:]:  # the event bridges two sessions: merge them

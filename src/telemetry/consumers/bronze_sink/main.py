@@ -1,4 +1,5 @@
 """Bronze sink: archive every message, byte for byte, to S3. At-least-once."""
+
 from __future__ import annotations
 
 import argparse
@@ -103,8 +104,6 @@ class BronzeSink:
             self.flush()  # drain what is left on a clean shutdown
         finally:
             self.consumer.close()
-
-
 
 
 def parse_args() -> argparse.Namespace:

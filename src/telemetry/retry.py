@@ -1,4 +1,5 @@
 """Retry with capped exponential backoff and full jitter, for TRANSIENT failures only."""
+
 from __future__ import annotations
 
 import logging
@@ -11,7 +12,7 @@ T = TypeVar("T")
 log = logging.getLogger(__name__)
 
 
-def retry(
+def retry[T](
     fn: Callable[[], T],
     *,
     retry_on: tuple[type[BaseException], ...],
@@ -30,7 +31,12 @@ def retry(
                 raise
             delay = random.uniform(0, min(max_delay, base_delay * 2 ** (attempt - 1)))
             log.warning(
-                "%s failed (attempt %d/%d): %s; retrying in %.2fs", what, attempt, attempts, exc, delay
+                "%s failed (attempt %d/%d): %s; retrying in %.2fs",
+                what,
+                attempt,
+                attempts,
+                exc,
+                delay,
             )
             sleep(delay)
     raise AssertionError("unreachable")

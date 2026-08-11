@@ -1,8 +1,9 @@
 """Dead-letter publisher: original bytes untouched, failure context in headers."""
+
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from confluent_kafka import KafkaError, Message, Producer
 from pydantic import ValidationError
@@ -14,9 +15,7 @@ MAX_ERROR_BYTES = 1024
 
 
 def describe_validation_error(exc: ValidationError) -> str:
-    return "; ".join(
-        f"{'.'.join(str(p) for p in e['loc'])}: {e['msg']}" for e in exc.errors()[:5]
-    )
+    return "; ".join(f"{'.'.join(str(p) for p in e['loc'])}: {e['msg']}" for e in exc.errors()[:5])
 
 
 class DeadLetterPublisher:
@@ -52,13 +51,16 @@ class DeadLetterPublisher:
             ("dlq.source.partition", str(msg.partition())),
             ("dlq.source.offset", str(msg.offset())),
             ("dlq.consumer.group", self.source_group),
-            ("dlq.failed_at", datetime.now(timezone.utc).isoformat()),
+            ("dlq.failed_at", datetime.now(UTC).isoformat()),
             ("dlq.attempts", str(prior_attempts + 1)),
         ]
         while True:
             try:
                 self._producer.produce(
-                    self.topic, key=msg.key(), value=msg.value(), headers=headers,
+                    self.topic,
+                    key=msg.key(),
+                    value=msg.value(),
+                    headers=headers,
                     on_delivery=self._on_delivery,
                 )
                 break
@@ -70,4 +72,6 @@ class DeadLetterPublisher:
         """Raise unless every DLQ message so far is durable. Call BEFORE committing offsets."""
         remaining = self._producer.flush(timeout)
         if remaining or self.failed:
-            raise RuntimeError(f"DLQ publish incomplete: undelivered={remaining} failed={self.failed}")
+            raise RuntimeError(
+                f"DLQ publish incomplete: undelivered={remaining} failed={self.failed}"
+            )

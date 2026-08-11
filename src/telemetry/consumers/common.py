@@ -1,4 +1,5 @@
 """Shared consumer plumbing: config, graceful shutdown, message helpers."""
+
 from __future__ import annotations
 
 import logging

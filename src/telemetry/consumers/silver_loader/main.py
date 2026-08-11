@@ -1,4 +1,5 @@
 """Silver loader: validate, batch-insert into ClickHouse, DLQ bad data, then commit."""
+
 from __future__ import annotations
 
 import logging
@@ -65,7 +66,9 @@ class SilverLoader:
                 self.recovery_rows.append(recovery_row(event, msg.partition(), msg.offset()))
         except Exception:  # no I/O here: any failure is deterministic -> poison message
             self.stats["processing_error"] += 1
-            log.exception("processing error at %s[%d]@%d", msg.topic(), msg.partition(), msg.offset())
+            log.exception(
+                "processing error at %s[%d]@%d", msg.topic(), msg.partition(), msg.offset()
+            )
             self.dlq.publish(msg, "processing_error", traceback.format_exc(limit=3))
 
     def should_flush(self) -> bool:

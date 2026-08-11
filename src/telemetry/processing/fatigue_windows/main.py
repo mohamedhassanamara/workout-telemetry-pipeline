@@ -1,4 +1,5 @@
 """Fatigue processor: event-time session windows over workout sets -> ClickHouse gold."""
+
 from __future__ import annotations
 
 import argparse
@@ -12,13 +13,13 @@ from pydantic import ValidationError
 
 from telemetry.clients import make_clickhouse_client
 from telemetry.config import Settings, get_settings
-from telemetry.dlq.publisher import DeadLetterPublisher
 from telemetry.consumers.common import (
     GracefulShutdown,
     build_consumer,
     fmt_partitions,
     real_messages,
 )
+from telemetry.dlq.publisher import DeadLetterPublisher
 from telemetry.log import setup_logging
 from telemetry.processing.fatigue_windows.windows import (
     FATIGUE_COLUMNS,

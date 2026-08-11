@@ -1,4 +1,5 @@
 """Connectivity check from the host: broker, schema registry, S3."""
+
 import httpx
 from confluent_kafka.admin import AdminClient
 

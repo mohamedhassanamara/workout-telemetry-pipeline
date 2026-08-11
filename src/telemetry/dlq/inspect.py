@@ -1,4 +1,5 @@
 """Read the whole DLQ (no commits, no side effects) and summarise it."""
+
 from __future__ import annotations
 
 import argparse
@@ -47,7 +48,11 @@ def main() -> None:
         by_label[(reason, h.get("x-chaos", "-"))] += 1
         by_attempts[h.get("dlq.attempts", "?")] += 1
         if len(samples.setdefault(reason, [])) < args.samples:
-            src = f"{h.get('dlq.source.topic')}[{h.get('dlq.source.partition')}]@{h.get('dlq.source.offset')}"
+            src = (
+                f"{h.get('dlq.source.topic')}[{h.get('dlq.source.partition')}]"
+                f"@{h.get('dlq.source.offset')}"
+            )
+
             samples[reason].append(f"{src}  {h.get('dlq.error', '')[:160]}")
     consumer.close()
 

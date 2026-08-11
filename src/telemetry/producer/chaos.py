@@ -1,4 +1,5 @@
 """Deliberate bad data so the pipeline's defences have something to catch."""
+
 from __future__ import annotations
 
 import json

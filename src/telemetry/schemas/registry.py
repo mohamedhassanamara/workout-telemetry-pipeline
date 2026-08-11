@@ -1,4 +1,5 @@
 """Export Pydantic contracts to schemas/*.json and register them with BACKWARD compatibility."""
+
 from __future__ import annotations
 
 import json

@@ -1,4 +1,5 @@
 """Reconcile bronze with the broker: every retained offset must exist in S3 at least once."""
+
 import gzip
 import json
 from collections import Counter

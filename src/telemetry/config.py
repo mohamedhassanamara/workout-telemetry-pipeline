@@ -1,4 +1,5 @@
 """All runtime configuration, read from TELEMETRY_* environment variables (or .env)."""
+
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict

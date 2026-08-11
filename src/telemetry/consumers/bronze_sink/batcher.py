@@ -1,4 +1,5 @@
 """Size/age-bounded buffer of raw records, kept per (topic, partition)."""
+
 from __future__ import annotations
 
 import time

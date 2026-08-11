@@ -1,4 +1,5 @@
 """Re-publish DLQ messages of one reason to their source topic. Dry run unless --execute."""
+
 from __future__ import annotations
 
 import argparse
@@ -17,8 +18,12 @@ IDLE_STOP_S = 10.0
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--reason", required=True, help="validation_error | processing_error | late_event")
-    p.add_argument("--error-contains", default=None, help="only messages whose dlq.error contains this")
+    p.add_argument(
+        "--reason", required=True, help="validation_error | processing_error | late_event"
+    )
+    p.add_argument(
+        "--error-contains", default=None, help="only messages whose dlq.error contains this"
+    )
     p.add_argument("--max-attempts", type=int, default=3)
     p.add_argument("--execute", action="store_true", help="actually re-publish and commit")
     args = p.parse_args()

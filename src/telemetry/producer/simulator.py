@@ -1,9 +1,10 @@
 """Pure workout simulator: no Kafka, no I/O. Same seed -> same events."""
+
 from __future__ import annotations
 
 import random
 from dataclasses import dataclass
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import UTC, date, datetime, time, timedelta
 from uuid import UUID
 
 from telemetry.schemas.events import DailyRecoveryLogged, Exercise, WorkoutSetLogged
@@ -75,7 +76,7 @@ def generate_recovery(
     quality = int(clamp(round(1 + (sleep - 4) * 0.7 + rng.gauss(0, 0.5)), 1, 5))
     rhr = athlete.baseline_rhr + round((1 - readiness) * 6 + rng.gauss(0, 1.5))
     hrv = round(clamp(rng.gauss(55 + readiness * 25, 8), 10, 200), 1)
-    event_time = datetime.combine(day, time(6, 30), tzinfo=timezone.utc) + timedelta(
+    event_time = datetime.combine(day, time(6, 30), tzinfo=UTC) + timedelta(
         minutes=rng.randint(0, 60)
     )
     event = DailyRecoveryLogged(
@@ -103,7 +104,7 @@ def generate_session(
     if not exercises:
         return []  # rest day
     session_id = new_uuid(rng)
-    t = datetime.combine(day, time(athlete.session_hour), tzinfo=timezone.utc)
+    t = datetime.combine(day, time(athlete.session_hour), tzinfo=UTC)
     t += timedelta(minutes=rng.randint(0, 30))
     fatigue = 0.0
     events: list[WorkoutSetLogged] = []

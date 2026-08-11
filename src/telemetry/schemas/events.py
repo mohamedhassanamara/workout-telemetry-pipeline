@@ -1,7 +1,8 @@
 """Event contracts. Every event on the wire must parse into one of these models."""
+
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from enum import StrEnum
 from typing import Annotated, Literal
 from uuid import UUID, uuid4
@@ -12,7 +13,7 @@ MAX_CLOCK_SKEW = timedelta(minutes=5)
 
 
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class Exercise(StrEnum):
@@ -61,7 +62,9 @@ class DailyRecoveryLogged(EventBase):
     hrv_ms: float | None = Field(default=None, ge=5, le=250)
 
 
-TelemetryEvent = Annotated[WorkoutSetLogged | DailyRecoveryLogged, Field(discriminator="event_type")]
+TelemetryEvent = Annotated[
+    WorkoutSetLogged | DailyRecoveryLogged, Field(discriminator="event_type")
+]
 _adapter: TypeAdapter[WorkoutSetLogged | DailyRecoveryLogged] = TypeAdapter(TelemetryEvent)
 
 

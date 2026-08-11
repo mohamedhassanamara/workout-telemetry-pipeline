@@ -69,3 +69,6 @@ dlq-peek:
 	docker compose exec redpanda rpk topic consume workout.dlq.v1 -n 3 -f '%h{%k: %v\\n}\\n%v\\n\\n'
 dlq-inspect:
 	python -m telemetry.dlq.inspect
+
+test:
+	pytest -q
