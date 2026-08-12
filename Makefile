@@ -72,3 +72,5 @@ dlq-inspect:
 
 test:
 	pytest -q
+test-integration:
+	pytest -m integration -v
