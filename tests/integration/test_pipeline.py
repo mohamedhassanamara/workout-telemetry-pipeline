@@ -1,9 +1,10 @@
 """End to end: producer -> Redpanda -> silver loader -> ClickHouse + DLQ. Needs `make up`."""
+
 import subprocess
 import sys
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from confluent_kafka import OFFSET_BEGINNING, Consumer, KafkaError, TopicPartition
@@ -76,7 +77,7 @@ def test_valid_duplicate_and_malformed_land_in_the_right_place(silver_loader):
         weight_kg=180,
         rpe=8.5,
         rest_seconds=200,
-        event_time=datetime.now(timezone.utc),
+        event_time=datetime.now(UTC),
     )
     producer = TelemetryProducer(s, client_id="integration-test")
     producer.send_event(event, {"x-test-run": run_id})
