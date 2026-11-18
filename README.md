@@ -1,6 +1,6 @@
 # Workout Telemetry Streaming Pipeline
 
-![ci](https://github.com/mohamedhassenamara/workout-telemetry-pipeline/actions/workflows/ci.yml/badge.svg)
+![ci](https://github.com/mohamedhassanamara/workout-telemetry-pipeline/actions/workflows/ci.yml/badge.svg)
 
 Event-driven streaming pipeline for gym workout telemetry: contracts, at-least-once sinks, event-time windows and a replayable DLQ, fully local with Docker Compose.
 
