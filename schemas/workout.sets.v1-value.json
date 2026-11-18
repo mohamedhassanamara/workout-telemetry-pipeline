@@ -1,18 +1,4 @@
 {
-  "$defs": {
-    "Exercise": {
-      "enum": [
-        "back_squat",
-        "bench_press",
-        "deadlift",
-        "overhead_press",
-        "barbell_row",
-        "pull_up"
-      ],
-      "title": "Exercise",
-      "type": "string"
-    }
-  },
   "additionalProperties": false,
   "properties": {
     "athlete_id": {
@@ -37,7 +23,16 @@
       "type": "string"
     },
     "exercise": {
-      "$ref": "#/$defs/Exercise"
+      "enum": [
+        "back_squat",
+        "bench_press",
+        "deadlift",
+        "overhead_press",
+        "barbell_row",
+        "pull_up"
+      ],
+      "title": "Exercise",
+      "type": "string"
     },
     "produced_at": {
       "format": "date-time",

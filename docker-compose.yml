@@ -1,4 +1,21 @@
 name: workout-telemetry
+x-telemetry-app: &telemetry-app
+  build: .
+  profiles: [apps]
+  restart: unless-stopped
+  environment:
+    TELEMETRY_KAFKA_BOOTSTRAP: redpanda:9092
+    TELEMETRY_SCHEMA_REGISTRY_URL: http://redpanda:8081
+    TELEMETRY_S3_ENDPOINT: http://localstack:4566
+    TELEMETRY_CLICKHOUSE_HOST: clickhouse
+  depends_on:
+    redpanda:
+      condition: service_healthy
+    localstack:
+      condition: service_healthy
+    clickhouse:
+      condition: service_healthy
+  networks: [telemetry-net]
 
 services:
   redpanda:
@@ -93,6 +110,21 @@ services:
       retries: 10
       start_period: 15s
     networks: [telemetry-net]
+
+  bronze-sink:
+    <<: *telemetry-app
+    container_name: bronze-sink
+    command: ["python", "-m", "telemetry.consumers.bronze_sink.main"]
+
+  silver-loader:
+    <<: *telemetry-app
+    container_name: silver-loader
+    command: ["python", "-m", "telemetry.consumers.silver_loader.main"]
+
+  fatigue-windows:
+    <<: *telemetry-app
+    container_name: fatigue-windows
+    command: ["python", "-m", "telemetry.processing.fatigue_windows.main"]
 
 networks:
   telemetry-net:

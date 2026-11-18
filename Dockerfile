@@ -1,12 +1,8 @@
 FROM python:3.12-slim
-
+WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
-
-WORKDIR /app
 COPY pyproject.toml ./
-COPY src/ ./src/
+COPY src ./src
 RUN pip install --no-cache-dir .
-
-# Replace with the service entrypoint once implemented.
-CMD ["python", "-c", "print('Workout telemetry pipeline scaffold; no service implemented yet.')"]
+# no default CMD: each Compose service chooses its module

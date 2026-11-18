@@ -43,6 +43,9 @@ jobs:
           cp .env.example .env
           make up
           make schemas
+      - name: Schema compatibility check (smoke test)
+        if: env.LOCALSTACK_AUTH_TOKEN != ''
+        run: make schemas-check
       - name: Integration tests
         if: env.LOCALSTACK_AUTH_TOKEN != ''
         run: pytest -m integration -v

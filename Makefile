@@ -1,4 +1,7 @@
-.PHONY: up down reset ps health logs
+.PHONY: up down reset ps health logs schemas schemas-check \
+	apps-up apps-logs demo topics install check lint \
+	produce-backfill produce-live bronze bronze-reset audit migrate sql \
+	silver fatigue dlq-peek dlq-inspect test test-integration
 
 up:
 	docker compose up -d --wait
@@ -6,10 +9,22 @@ up:
 	$(MAKE) migrate
 
 down:
-	docker compose down
+	docker compose --profile apps down
 
 reset:
-	docker compose down -v
+	docker compose --profile apps down -v
+apps-up:
+	docker compose --profile apps up -d --build
+
+apps-logs:
+	docker compose --profile apps logs -f bronze-sink silver-loader fatigue-windows
+
+demo:
+	$(MAKE) reset
+	$(MAKE) up
+	$(MAKE) schemas
+	$(MAKE) apps-up
+	$(MAKE) produce-backfill
 
 ps:
 	docker compose ps
@@ -34,6 +49,9 @@ lint:
 
 schemas:
 	python -m telemetry.schemas.registry
+
+schemas-check:
+	python -m telemetry.schemas.registry --check
 
 produce-backfill:
 	python -m telemetry.producer.main backfill --athletes 20 --days 42 \
